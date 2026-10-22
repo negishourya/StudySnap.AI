@@ -1,4 +1,5 @@
 import {
+  STEM_PRESETS,
   DEMO_EXPLANATION,
   DEMO_SUMMARY,
   DEMO_QUIZ,
@@ -24,6 +25,26 @@ export interface ApiResponse<T> {
   isDemo?: boolean;
 }
 
+// Find closest matching STEM preset based on notes or subject
+function findMatchingPreset(notes: string, subject: string) {
+  const lowerNotes = (notes || '').toLowerCase();
+  const lowerSub = (subject || '').toLowerCase();
+
+  if (lowerNotes.includes('gibbs') || lowerNotes.includes('enthalpy') || lowerNotes.includes('equilibrium') || lowerSub.includes('chem')) {
+    return STEM_PRESETS.find((p) => p.id === 'chem-thermo') || STEM_PRESETS[1];
+  }
+  if (lowerNotes.includes('calculus') || lowerNotes.includes('differential') || lowerNotes.includes('integrat') || lowerSub.includes('math')) {
+    return STEM_PRESETS.find((p) => p.id === 'math-calculus') || STEM_PRESETS[2];
+  }
+  if (lowerNotes.includes('algorithm') || lowerNotes.includes('big-o') || lowerNotes.includes('binary search') || lowerSub.includes('computer')) {
+    return STEM_PRESETS.find((p) => p.id === 'cs-algorithms') || STEM_PRESETS[3];
+  }
+  if (lowerNotes.includes('kirchhoff') || lowerNotes.includes('ohm') || lowerNotes.includes('circuit') || lowerSub.includes('electronic')) {
+    return STEM_PRESETS.find((p) => p.id === 'eng-circuits') || STEM_PRESETS[4];
+  }
+  return STEM_PRESETS[0];
+}
+
 export async function checkServerHealth(): Promise<{ hasApiKey: boolean; aiModel: string }> {
   try {
     const res = await fetch('/api/health');
@@ -44,12 +65,13 @@ export async function explainNotes(
 ): Promise<ApiResponse<{ explanation: string; metadata?: any }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 600));
+    const matched = findMatchingPreset(notes, subject);
     return {
       success: true,
       isDemo: true,
       data: {
-        explanation: DEMO_EXPLANATION,
-        metadata: { subject, difficulty, language, wordCount: 280 },
+        explanation: matched.explanation || DEMO_EXPLANATION,
+        metadata: { subject: matched.subject, difficulty, language, wordCount: 320 },
       },
     };
   }
@@ -95,10 +117,11 @@ export async function summarizeNotes(
 ): Promise<ApiResponse<{ summary: string }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 500));
+    const matched = findMatchingPreset(notes, subject);
     return {
       success: true,
       isDemo: true,
-      data: { summary: DEMO_SUMMARY },
+      data: { summary: matched.summary || DEMO_SUMMARY },
     };
   }
 
@@ -140,10 +163,12 @@ export async function generateQuiz(
 ): Promise<ApiResponse<{ questions: QuizQuestion[] }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 700));
+    const matched = findMatchingPreset(notes, subject);
+    const questions = (matched.quiz && matched.quiz.length > 0) ? matched.quiz : DEMO_QUIZ;
     return {
       success: true,
       isDemo: true,
-      data: { questions: DEMO_QUIZ.slice(0, questionCount) },
+      data: { questions: questions.slice(0, questionCount) },
     };
   }
 
@@ -184,10 +209,12 @@ export async function generateFlashcards(
 ): Promise<ApiResponse<{ cards: Flashcard[] }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 500));
+    const matched = findMatchingPreset(notes, subject);
+    const cards = (matched.flashcards && matched.flashcards.length > 0) ? matched.flashcards : DEMO_FLASHCARDS;
     return {
       success: true,
       isDemo: true,
-      data: { cards: DEMO_FLASHCARDS.slice(0, count) },
+      data: { cards: cards.slice(0, count) },
     };
   }
 
@@ -234,26 +261,118 @@ export async function chatWithTutor(
 ): Promise<ApiResponse<{ reply: string; suggestions: string[]; mascotReaction: string }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 600));
-    const lower = message.toLowerCase();
-    let reply = `That's a classic question! Let's think through Newton's Second Law ($F = m \\cdot a$). 
-    
-If you double the force while keeping the mass constant, what do you predict happens to the rate of acceleration? Think about pushing a supermarket cart with twice the muscle effort!`;
-    let suggestions = [
-      'The acceleration will double too!',
-      'Show me another numerical example',
-      'Explain the Third Law with rockets',
-    ];
+    const lower = (message || '').toLowerCase();
+    const topic = (options.currentTopic || '').toLowerCase();
+    const fullText = `${lower} ${topic}`;
+
+    let reply = '';
+    let suggestions: string[] = [];
+
+    // 1. CHEMISTRY
+    if (fullText.includes('chem') || fullText.includes('gibbs') || fullText.includes('enthalpy') || fullText.includes('entropy') || fullText.includes('equilibrium') || fullText.includes('reaction') || fullText.includes('acid') || fullText.includes('ph') || fullText.includes('mole')) {
+      if (lower.includes('gibbs') || lower.includes('spontaneous') || lower.includes('delta g') || lower.includes('equilibrium')) {
+        reply = `Great question on Chemical Thermodynamics! 
+        
+The fundamental equation is:
+$$\\Delta G = \\Delta H - T\\Delta S$$
+
+For a process to be **thermodynamically spontaneous**, the free energy change must be negative ($\\Delta G < 0$).
+- If $\\Delta H < 0$ (exothermic) and $\\Delta S > 0$ (entropy increases), $\\Delta G$ is **always negative** at all temperatures!
+- At dynamic equilibrium, $\\Delta G = 0$, and standard free energy relates to the equilibrium constant via:
+$$\\Delta G^\\circ = -R T \\ln(K_{\\text{eq}})$$
+
+What happens if you increase temperature on an exothermic reaction? By Le Chatelier's principle, it shifts back toward reactants!`;
+        suggestions = ['Explain Le Chatelier\'s principle with an example', 'At what temperature does ΔG become zero?', 'Give me a practice calculation'];
+      } else {
+        reply = `Let's break this chemistry concept down step-by-step! In chemical transformations, molecular stability and electron configurations govern spontaneity and rate.
+
+1. **Thermodynamics** tells us if the reaction *can* occur ($\\Delta G < 0$).
+2. **Kinetics** tells us *how fast* it gets there (activation energy $E_a$ and catalyst mechanisms).
+
+Which aspect would you like to explore deeper?`;
+        suggestions = ['Explain activation energy & catalysts', 'Calculate reaction quotient Q vs K', 'Show a real-world industrial example'];
+      }
+    }
+    // 2. MATHEMATICS (Calculus, Linear Algebra, ODEs)
+    else if (fullText.includes('math') || fullText.includes('calculus') || fullText.includes('derivative') || fullText.includes('integral') || fullText.includes('differential equation') || fullText.includes('matrix') || fullText.includes('eigen') || fullText.includes('limit')) {
+      if (lower.includes('ode') || lower.includes('differential') || lower.includes('integrating factor')) {
+        reply = `Let's solve first-order linear differential equations of the form:
+$$\\frac{dy}{dx} + P(x) y = Q(x)$$
+
+Here is the exact method:
+1. **Find Integrating Factor:** $I(x) = e^{\\int P(x) dx}$
+2. **Multiply through:** $\\frac{d}{dx}[y \\cdot I(x)] = Q(x) \\cdot I(x)$
+3. **Integrate both sides:**
+$$y(x) = \\frac{1}{I(x)} \\left[\\int Q(x) I(x) dx + C\\right]$$
+
+For example, with $\\frac{dy}{dx} + 2y = 4$, $I(x) = e^{2x}$, leading directly to $y(x) = 2 + C e^{-2x}$!`;
+        suggestions = ['How does this apply to RC circuits?', 'What if initial condition y(0)=5 is given?', 'Explain Integration by Parts (LIATE)'];
+      } else if (lower.includes('matrix') || lower.includes('eigen')) {
+        reply = `In Linear Algebra, eigenvalues ($\\lambda$) and eigenvectors ($\\vec{v}$) describe the invariant directions of a linear transformation $A$:
+$$A \\vec{v} = \\lambda \\vec{v} \\quad \\implies \\quad (A - \\lambda I)\\vec{v} = \\vec{0}$$
+
+To find eigenvalues, compute the characteristic polynomial by taking the determinant:
+$$\\det(A - \\lambda I) = 0$$
+
+This is the exact mathematics behind Google's PageRank, 3D graphics rotations, and quantum state mechanics!`;
+        suggestions = ['How do you calculate a 2x2 determinant?', 'Why are eigenvectors useful in engineering?', 'Give me a quick practice problem'];
+      } else {
+        reply = `Calculus is the mathematical language of continuous change! 
+- The **Derivative** $\\frac{dy}{dx}$ gives instantaneous slope and rate of change.
+- The **Integral** $\\int f(x) dx$ accumulates continuous quantities and calculates area under curves.
+
+By the Fundamental Theorem of Calculus, differentiation and integration are exact inverse operations! What specific problem or rule would you like to work through?`;
+        suggestions = ['Explain Chain Rule with an example', 'When should I use Integration by Parts?', 'Walk through Product Rule'];
+      }
+    }
+    // 3. COMPUTER SCIENCE & ALGORITHMS
+    else if (fullText.includes('computer') || fullText.includes('algorithm') || fullText.includes('big-o') || fullText.includes('search') || fullText.includes('tree') || fullText.includes('graph') || fullText.includes('bfs') || fullText.includes('dfs') || fullText.includes('code') || fullText.includes('data structure')) {
+      reply = `In Computer Science & Systems, we evaluate algorithm efficiency using **Big-O notation**:
+
+- $O(1)$: Constant time (hash table lookup average)
+- $O(\\log n)$: Logarithmic time (Binary Search cutting space in half)
+- $O(n \\log n)$: Linearithmic time (Merge Sort / Heap Sort divide-and-conquer)
+- $O(n^2)$: Quadratic time (nested comparison loops)
+
+For graph problems:
+- **BFS (Breadth-First Search)** uses a FIFO Queue and is guaranteed to find the shortest unweighted path.
+- **DFS (Depth-First Search)** uses a LIFO Stack or recursion, ideal for topological sort and cycle detection.
+
+Would you like to see a code implementation or solve a time complexity question?`;
+      suggestions = ['Show Binary Search implementation', 'Compare BFS vs DFS in detail', 'Explain Dynamic Programming memoization'];
+    }
+    // 4. ELECTRICAL & ENGINEERING (Ohm, Kirchhoff, Stress/Strain, Fluid)
+    else if (fullText.includes('circuit') || fullText.includes('ohm') || fullText.includes('kirchhoff') || fullText.includes('resistor') || fullText.includes('voltage') || fullText.includes('current') || fullText.includes('electronics') || fullText.includes('stress') || fullText.includes('fluid')) {
+      reply = `Let's explore circuit engineering! All electrical networks obey two fundamental conservation laws:
+
+1. **Kirchhoff's Current Law (KCL):** Charge is conserved at every junction:
+   $$\\sum I_{\\text{in}} = \\sum I_{\\text{out}}$$
+2. **Kirchhoff's Voltage Law (KVL):** Energy is conserved along every closed loop:
+   $$\\sum V_{\\text{loop}} = 0$$
+
+Paired with Ohm's Law ($V = I \\cdot R$), you can solve any multi-loop circuit!
+- Two resistors in parallel: $R_{\\text{eq}} = \\frac{R_1 R_2}{R_1 + R_2}$ (always smaller than the smallest branch!).
+- Power dissipated: $P = V \\cdot I = I^2 R = \\frac{V^2}{R}$.
+
+Shall we work through a practical nodal analysis or AC resonance example?`;
+      suggestions = ['Calculate two 6Ω resistors in parallel', 'How does a capacitor behave in DC vs AC?', 'Explain KVL with a battery and two resistors'];
+    }
+    // 5. PHYSICS (Default & Mechanics)
+    else {
+      reply = `That's a classic physics & dynamics question! Let's think through Newton's Second Law ($F = m \\cdot a$). 
+      
+If you double the force while keeping the mass constant, the rate of acceleration will double too ($a = F / m$). Think of an electric vehicle: doubling the motor torque cuts the 0-60 acceleration time in half!
+
+Action-reaction forces (Third Law: $\\vec{F}_{AB} = -\\vec{F}_{BA}$) act on **two different bodies**, which is why they never cancel each other out!`;
+      suggestions = [
+        'Give a numerical example with numbers',
+        'How does friction affect acceleration?',
+        'Switch to Chemistry or Maths topic',
+      ];
+    }
 
     if (options.contextSnippet) {
-      reply = `I see you shared this note snippet: "${options.contextSnippet.slice(0, 100)}...". Let's connect that to Newton's Second Law ($F = m \\cdot a$). Notice how force is directly proportional to acceleration when mass remains fixed!`;
-    } else if (lower.includes('example') || lower.includes('calculate')) {
-      reply = `Here is a practical engineering example:
-      
-Suppose an automated electric robot vehicle has a chassis mass of $m = 12\\,\\text{kg}$. To accelerate it from a standstill at $a = 2.5\\,\\text{m/s}^2$, the motor gear train must supply:
-$$F = m \\cdot a = 12\\,\\text{kg} \\times 2.5\\,\\text{m/s}^2 = 30\\,\\text{N}$$
-
-Notice how mass acts as rotational and translational inertia resisting the sudden velocity shift!`;
-      suggestions = ['How does friction affect this?', 'What if mass decreases?', 'Let me try a challenge question!'];
+      reply = `I see you shared this note snippet: "${options.contextSnippet.slice(0, 100)}...". Let's connect that directly to our study topic! Notice how the fundamental equations describe the physical relationships under equilibrium and transient states.`;
     }
 
     return {
@@ -317,10 +436,58 @@ export async function evaluateTutorAnswer(
 ): Promise<ApiResponse<{ evaluation: any }>> {
   if (isDemoMode) {
     await new Promise((r) => setTimeout(r, 600));
-    const isGood =
-      studentAnswer.toLowerCase().includes('6') ||
-      studentAnswer.toLowerCase().includes('f=ma') ||
-      studentAnswer.length > 5;
+    const ans = studentAnswer.toLowerCase().trim();
+    const q = question.toLowerCase();
+
+    let isGood = false;
+    let feedback = '';
+    let takeaway = '';
+
+    // Smart domain checks
+    if (q.includes('force') || q.includes('3 m/s²') || q.includes('2 kg')) {
+      isGood = ans.includes('6') || ans.includes('f=ma') || ans.includes('six');
+      feedback = isGood
+        ? 'Superb calculation! You correctly multiplied mass (2 kg) by acceleration (3 m/s²) yielding 6 Newtons.'
+        : 'Good try! Remember Newton\'s second law: F = m · a. So 2 kg × 3 m/s² = 6 Newtons.';
+      takeaway = 'Always check SI base units: kg · m/s² = Newtons.';
+    } else if (q.includes('constant speed') || q.includes('frictionless space')) {
+      isGood = ans.includes('0') || ans.includes('zero') || ans.includes('none') || ans.includes('no force');
+      feedback = isGood
+        ? 'Spot on! According to Newton\'s First Law, zero net external force is needed to maintain constant velocity.'
+        : 'Notice Newton\'s First Law: an object in uniform motion stays in uniform motion when net external force is 0.';
+      takeaway = 'Inertia maintains constant speed without requiring any continuous fuel burn!';
+    } else if (q.includes('integrating factor') || q.includes('3y = 9') || q.includes('dy/dx')) {
+      isGood = ans.includes('e^(3x)') || ans.includes('e^3x') || ans.includes('exp(3x)');
+      feedback = isGood
+        ? 'Excellent calculus work! The integrating factor is e^(∫ 3 dx) = e^(3x).'
+        : 'Remember the formula: I(x) = e^(∫ P(x) dx). With P(x) = 3, I(x) = e^(3x).';
+      takeaway = 'Integrating factor transforms the ODE into an exact product rule derivative.';
+    } else if (q.includes('delta g') || q.includes('gibbs') || q.includes('spontaneous') || q.includes('k_eq')) {
+      isGood = ans.includes('negative') || ans.includes('spontaneous') || ans.includes('< 0') || ans.includes('exergonic');
+      feedback = isGood
+        ? 'Accurate thermodynamic deduction! Negative ΔG indicates a spontaneous (exergonic) process.'
+        : 'Review the spontaneity criterion: ΔG < 0 (negative) means the process is thermodynamically spontaneous.';
+      takeaway = 'ΔG determines spontaneity, while activation energy determines reaction speed.';
+    } else if (q.includes('binary search') || q.includes('1,024') || q.includes('1024')) {
+      isGood = ans.includes('10') || ans.includes('ten') || ans.includes('log');
+      feedback = isGood
+        ? 'Correct! log₂(1,024) = 10, so binary search requires at most 10 comparisons.'
+        : 'In binary search, each comparison halves the search space: 2^10 = 1024, so maximum 10 comparisons.';
+      takeaway = 'O(log n) scaling makes binary search remarkably fast even for millions of records.';
+    } else if (q.includes('battery') || q.includes('3ω') || q.includes('9v') || q.includes('resistor')) {
+      isGood = ans.includes('3') || ans.includes('three') || ans.includes('3a') || ans.includes('3 a');
+      feedback = isGood
+        ? 'Perfect! By Ohm\'s Law, I = V / R = 9V / 3Ω = 3 Amperes.'
+        : 'Recall Ohm\'s Law: Current I = V / R. With 9V across 3Ω, I = 3 Amperes.';
+      takeaway = 'Ohm\'s Law V = I·R is the foundational relation for all linear circuit elements.';
+    } else {
+      isGood = ans.length >= 4;
+      feedback = isGood
+        ? 'Great analytical reasoning and clear technical phrasing!'
+        : 'Good start. Try to elaborate on the underlying engineering equation or mechanism.';
+      takeaway = 'Break complex engineering challenges into fundamental governing laws.';
+    }
+
     return {
       success: true,
       isDemo: true,
@@ -328,11 +495,9 @@ export async function evaluateTutorAnswer(
         evaluation: {
           isCorrect: isGood,
           verdict: isGood ? 'correct' : 'needs_work',
-          feedback: isGood
-            ? 'Superb calculation! You correctly multiplied mass (2 kg) by acceleration (3 m/s²) yielding 6 Newtons.'
-            : 'Good attempt, but re-check your formula: Net force F equals mass multiplied by acceleration (F = m * a).',
-          xpEarned: isGood ? 35 : 10,
-          keyTakeaway: 'Always check that units are in SI: kg and m/s² yield Newtons directly.',
+          feedback,
+          xpEarned: isGood ? 40 : 15,
+          keyTakeaway: takeaway,
         },
       },
     };
@@ -357,6 +522,7 @@ export async function evaluateTutorAnswer(
     return { success: false, error: 'NETWORK_ERROR', message: err.message };
   }
 }
+
 
 export async function generateResumeAI(
   resumeData: ResumeData,

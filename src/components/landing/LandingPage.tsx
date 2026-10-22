@@ -60,7 +60,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       q: 'Do I need an API key to explore the platform?',
-      a: 'No! StudySnap AI includes a zero-credential Demo Mode equipped with verified Classical Mechanics and Newton’s Laws datasets, sample resumes, and ATS audits. If you want live Gemini AI synthesis for your own notes, the backend automatically uses the configured server-side key.',
+      a: 'No! StudySnap AI includes a zero-credential Demo Mode equipped with verified datasets across Physics (Classical Dynamics), Chemistry (Gibbs Free Energy & Equilibrium), Mathematics (Calculus & ODEs), Computer Science (Algorithms & Big-O), and Engineering (Circuit Analysis), plus sample resumes and ATS audits.',
     },
     {
       q: 'Can I upload lecture slides and PDF textbooks?',
@@ -114,19 +114,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <button
                 onClick={onExploreDemo}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Explore Demo (Newton's Laws)</span>
+                <span>Explore STEM Demos</span>
               </button>
             </div>
 
             <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center justify-center lg:justify-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Target disciplines:</span>
-              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">B.Tech CSE & AIML</span>
-              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">ECE & Mechanical</span>
-              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">Midterm & Final Prep</span>
-              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">Internship Resumes</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Broad STEM Coverage:</span>
+              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">⚡ Physics</span>
+              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">🧪 Chemistry</span>
+              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">📐 Mathematics</span>
+              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">💻 CS & Algorithms</span>
+              <span className="bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">⚙️ Engineering</span>
             </div>
           </div>
 

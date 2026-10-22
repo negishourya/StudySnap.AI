@@ -85,28 +85,57 @@ mockDb.set('guest', {
   id: 'guest',
   email: 'guest@studysnap.ai',
   name: 'Student Learner',
-  level: 2,
-  xp: 350,
-  streak: 3,
+  level: 3,
+  xp: 450,
+  streak: 4,
   dailyGoal: 3,
   dailyProgress: 2,
   notes: [
     {
-      id: 'note-default',
+      id: 'note-1',
       title: "Newton's Laws of Motion & F=ma",
       subject: 'Engineering Physics',
       createdAt: new Date().toISOString(),
       summary: 'Classical mechanics, inertia, and fundamental equations of force.',
     },
+    {
+      id: 'note-2',
+      title: 'Gibbs Free Energy & Chemical Equilibrium',
+      subject: 'Chemistry',
+      createdAt: new Date(Date.now() - 3600 * 2000).toISOString(),
+      summary: 'ΔG = ΔH - TΔS, reaction quotient Q, and Le Chatelier principle.',
+    },
+    {
+      id: 'note-3',
+      title: 'First-Order Linear ODEs & Integrating Factors',
+      subject: 'Mathematics',
+      createdAt: new Date(Date.now() - 3600 * 4000).toISOString(),
+      summary: 'Standard form dy/dx + P(x)y = Q(x) and transient circuit applications.',
+    },
+    {
+      id: 'note-4',
+      title: 'Kirchhoff Circuit Laws & Mesh Analysis',
+      subject: 'Electronics & Communication',
+      createdAt: new Date(Date.now() - 3600 * 8000).toISOString(),
+      summary: 'KCL charge conservation, KVL energy conservation, and parallel resistor networks.',
+    },
   ],
   quizAttempts: [
     {
-      id: 'quiz-default',
+      id: 'quiz-1',
       topic: 'Engineering Physics',
       score: 5,
       total: 5,
       percentage: 100,
       completedAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+    },
+    {
+      id: 'quiz-2',
+      topic: 'Chemistry',
+      score: 5,
+      total: 5,
+      percentage: 100,
+      completedAt: new Date(Date.now() - 3600 * 3000).toISOString(),
     },
   ],
   flashcardDecks: [],
@@ -117,20 +146,27 @@ mockDb.set('guest', {
     {
       id: 'act-1',
       type: 'quiz',
-      title: "Completed Newton's Laws Quiz",
-      time: '1 hour ago',
+      title: 'Completed Chemical Thermodynamics Quiz',
+      time: '30 mins ago',
       score: '100% (5/5)',
     },
     {
       id: 'act-2',
-      type: 'note',
-      title: 'Transformed Classical Dynamics Notes',
+      type: 'quiz',
+      title: "Completed Newton's Laws Quiz",
       time: '2 hours ago',
+      score: '100% (5/5)',
     },
     {
       id: 'act-3',
+      type: 'note',
+      title: 'Transformed Calculus & ODE Notes',
+      time: '4 hours ago',
+    },
+    {
+      id: 'act-4',
       type: 'tutor',
-      title: 'Practiced F = ma with Snap',
+      title: 'Practiced KVL and Ohm’s Law with Snap',
       time: 'Yesterday',
     },
   ],
@@ -612,23 +648,32 @@ app.post('/api/tutor/chat', rateLimiter, async (req: Request, res: Response) => 
       contextAddition = `\nActive Shared Student Context:\n"""\n${contextSnippet.slice(0, 5000)}\n"""\nDirectly refer to this context in your answer when helpful.\n`;
     }
 
-    const systemPrompt = `You are "Snap", the friendly, witty, highly knowledgeable AI study companion of StudySnap AI 2.0.
-Tone: Warm, encouraging, concise, highly pedagogical like Duolingo mixed with an MIT teaching assistant.
-Target Audience: College engineering & science students (CSE, AIML, ECE, Mech, Civil, etc.).
-Language: ${language}. If Hinglish is requested, use natural everyday Hinglish common in Indian engineering colleges.
-Difficulty: ${difficulty}.
-Current Topic: ${currentTopic || 'General Technical Studies'}.${contextAddition}
-Teaching Mode: ${mode} (If 'socratic', guide the student with thoughtful leading questions, intuitive hints, and analogies before handing over the full answer. If 'direct', give a structured explanation with an intuitive example).
+    const systemPrompt = `You are "Snap", the world-class, friendly, witty, and deeply pedagogical AI study companion of StudySnap AI.
+Your Expertise: Comprehensive university-level mastery of ALL STEM disciplines:
+- Physics (Classical Dynamics, Electromagnetism, Quantum Mechanics, Thermodynamics, Optics, Relativity)
+- Chemistry (Thermodynamics, Chemical Equilibrium, Organic Reaction Mechanisms, Electrochemistry, Kinetics, Atomic Structure)
+- Mathematics (Differential & Integral Calculus, ODEs & PDEs, Linear Algebra & Matrices, Probability, Discrete Math)
+- Engineering (Computer Science & Algorithms, Electrical & Circuits, Mechanical & Fluids, Civil & Structures, Chemical Eng)
+
+Tone: Warm, encouraging, crystal-clear, highly pedagogical like a top MIT or Stanford teaching assistant mixed with Duolingo's friendly motivation.
+Target Audience: College students, high school STEM students, and engineering undergraduates.
+Language: ${language}. If Hinglish is requested, use natural everyday Hinglish common in Indian colleges and engineering hostels.
+Difficulty Level: ${difficulty}.
+Current Topic: ${currentTopic || 'General STEM / Technical Studies'}.${contextAddition}
+Teaching Mode: ${mode} (If 'socratic', guide the student with thoughtful leading questions, intuitive hints, and physical intuition before revealing the complete answer. If 'direct', give a clean, well-structured explanation with clear formulas and an intuitive real-world example).
 
 Response rules:
-1. Keep replies digestible (2 to 4 short paragraphs max).
-2. If code is needed, provide clean, commented snippets.
-3. Offer 2 suggested follow-up questions at the very end formatted as:
+1. Always format mathematical equations, physical units, and chemical formulas cleanly using standard Markdown or LaTeX ($...$ for inline, $$...$$ for block).
+2. For calculation questions, break down the arithmetic step-by-step with clear unit tracking.
+3. Keep replies digestible (2 to 4 concise, engaging paragraphs max). Avoid overwhelming wall-of-text.
+4. If code or algorithmic steps are needed, provide clean, commented snippets.
+5. Offer 3 relevant suggested follow-up questions at the very end formatted as:
 [SUGGESTIONS]
 - Suggestion 1
 - Suggestion 2
+- Suggestion 3
 [/SUGGESTIONS]
-4. Do not invent formulas. Be honest if a concept requires outside lab verification.`;
+6. Never fabricate citations or physical constants. Treat facts and calculations with strict scientific accuracy.`;
 
     const conversationContext = history
       .slice(-6)

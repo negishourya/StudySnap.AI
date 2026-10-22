@@ -28,7 +28,7 @@ import {
   TutorContextShare,
 } from '../../types';
 import { explainNotes, summarizeNotes, generateQuiz } from '../../services/api';
-import { DEMO_RAW_NOTES } from '../../constants/demoData';
+import { STEM_PRESETS, StemTopicPreset, DEMO_RAW_NOTES } from '../../constants/demoData';
 import { DemoBadge } from '../common/DemoBadge';
 import { FileUploadModal } from '../common/FileUploadModal';
 
@@ -44,9 +44,10 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
   onShareContextWithTutor,
 }) => {
   // Input State
-  const [notes, setNotes] = useState('');
-  const [subject, setSubject] = useState<LearningSubject>('Engineering Physics');
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Beginner');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('physics-mechanics');
+  const [notes, setNotes] = useState(STEM_PRESETS[0].rawNotes);
+  const [subject, setSubject] = useState<LearningSubject>(STEM_PRESETS[0].subject);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(STEM_PRESETS[0].difficulty);
   const [language, setLanguage] = useState<ResponseLanguage>('English');
   const [outputMode, setOutputMode] = useState<TransformerOutputMode>('All-in-One');
   const [summaryLength, setSummaryLength] = useState<SummaryLength>('Standard');
@@ -60,9 +61,9 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
   const [copiedTab, setCopiedTab] = useState<string | null>(null);
 
   // Result outputs
-  const [explanationOutput, setExplanationOutput] = useState<string | null>(null);
-  const [summaryOutput, setSummaryOutput] = useState<string | null>(null);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
+  const [explanationOutput, setExplanationOutput] = useState<string | null>(STEM_PRESETS[0].explanation);
+  const [summaryOutput, setSummaryOutput] = useState<string | null>(STEM_PRESETS[0].summary);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(STEM_PRESETS[0].quiz);
   const [isOutputDemo, setIsOutputDemo] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -71,11 +72,22 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [isQuizSubmitted, setIsQuizSubmitted] = useState(false);
 
-  const handleLoadSampleNotes = () => {
-    setNotes(DEMO_RAW_NOTES);
-    setSubject('Engineering Physics');
-    setDifficulty('Beginner');
+  const handleSelectPreset = (preset: StemTopicPreset) => {
+    setSelectedPresetId(preset.id);
+    setNotes(preset.rawNotes);
+    setSubject(preset.subject);
+    setDifficulty(preset.difficulty);
+    setErrorMessage(null);
+
+    // Auto-update outputs for immediate exploration
+    setExplanationOutput(preset.explanation);
+    setSummaryOutput(preset.summary);
+    setQuizQuestions(preset.quiz);
+    setSelectedAnswers({});
+    setIsQuizSubmitted(false);
+    setCurrentQuestionIndex(0);
   };
+
 
   const handleTransform = async () => {
     if (!notes.trim()) {
@@ -206,7 +218,7 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isDemoMode ? (
             <DemoBadge />
           ) : (
@@ -215,13 +227,47 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
               Real AI Mode (Gemini)
             </span>
           )}
-          <button
-            type="button"
-            onClick={handleLoadSampleNotes}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors shadow-xs"
-          >
-            Load Newton's Laws Sample
-          </button>
+          {onOpenTutorWithTopic && (
+            <button
+              type="button"
+              onClick={() => onOpenTutorWithTopic(STEM_PRESETS.find((p) => p.id === selectedPresetId)?.title || subject)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors shadow-xs flex items-center gap-1"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Ask AI Tutor</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Broad STEM Subjects Bar */}
+      <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
+          <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span>Explore STEM Topics:</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {STEM_PRESETS.map((preset) => {
+            const isSelected = selectedPresetId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleSelectPreset(preset)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-500/20'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span>
+                  {preset.domain === 'Physics' ? '⚡' : preset.domain === 'Chemistry' ? '🧪' : preset.domain === 'Mathematics' ? '📐' : preset.domain === 'Computer Science' ? '💻' : '⚙️'}
+                </span>
+                <span>{preset.summaryBadge}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -235,7 +281,7 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
             </label>
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Upload Document</span>
@@ -247,7 +293,7 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={9}
-              placeholder="Paste lecture notes, textbook definitions, formula derivations, or code snippets here..."
+              placeholder="Paste lecture notes, textbook definitions, formula derivations, chemical equations, or code snippets here..."
               className="w-full text-xs sm:text-sm p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-hidden transition-all resize-y font-mono dark:text-slate-200"
             />
             <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1 px-1">

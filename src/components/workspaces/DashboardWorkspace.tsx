@@ -146,10 +146,11 @@ export const DashboardWorkspace: React.FC<DashboardWorkspaceProps> = ({
 
           <div className="space-y-4">
             {[
-              { subject: 'Engineering Physics (Dynamics & Mechanics)', progress: 92, status: 'Mastered' },
-              { subject: 'Computer Science (Data Structures & WebGL)', progress: 85, status: 'Strong' },
-              { subject: 'Mathematics (Calculus & Linear Algebra)', progress: 74, status: 'Good' },
-              { subject: 'Electronics & Communication', progress: 62, status: 'In Progress' },
+              { subject: 'Physics (Dynamics & Classical Mechanics)', progress: 92, status: 'Mastered' },
+              { subject: 'Chemistry (Thermodynamics & Equilibrium)', progress: 88, status: 'Strong' },
+              { subject: 'Mathematics (Calculus & Linear Algebra)', progress: 82, status: 'Strong' },
+              { subject: 'Computer Science (Algorithms & Big-O)', progress: 85, status: 'Strong' },
+              { subject: 'Engineering (Circuit Analysis & KVL/KCL)', progress: 75, status: 'In Progress' },
             ].map((sub, i) => (
               <div key={i} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-medium">

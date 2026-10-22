@@ -31,13 +31,22 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activeDomain, setActiveDomain] = useState<'All' | 'Physics' | 'Chemistry' | 'Maths' | 'CS' | 'Engineering'>('All');
+  const [teachingMode, setTeachingMode] = useState<'socratic' | 'direct'>('socratic');
+
   const [messages, setMessages] = useState<TutorMessage[]>([
     {
       id: 'floating-init',
       role: 'assistant',
-      content: "Hi! I'm Snap, your AI study buddy. You can ask me to explain any concept, ask for a quick calculation check, or paste text from any page!",
+      content: "Hi! I'm Snap, your AI study buddy. I can solve and explain questions across **Physics**, **Chemistry**, **Mathematics**, and **Engineering**! What are you working on today?",
       timestamp: 'Just now',
-      suggestions: ['Explain F = ma simply', 'Give me an everyday engineering example', 'Quiz me on Physics'],
+      suggestions: [
+        '⚡ Explain Newton\'s Laws & Dynamics',
+        '🧪 Gibbs Free Energy & Equilibrium',
+        '📐 How to solve First-Order ODEs',
+        '💻 Big-O & Binary Search Complexity',
+        '⚙️ Kirchhoff\'s Circuit Laws (KVL/KCL)',
+      ],
       mascotState: 'idle',
     },
   ]);
@@ -65,6 +74,60 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
       setInputMessage(`Can you explain this part from my ${sharedContext.source}: "${sharedContext.text.slice(0, 150)}..."?`);
     }
   }, [sharedContext]);
+
+  const handleDomainFilter = (domain: 'All' | 'Physics' | 'Chemistry' | 'Maths' | 'CS' | 'Engineering') => {
+    setActiveDomain(domain);
+    let domainSuggestions = [
+      '⚡ Explain Newton\'s Laws & Dynamics',
+      '🧪 Gibbs Free Energy & Equilibrium',
+      '📐 How to solve First-Order ODEs',
+      '💻 Big-O & Binary Search Complexity',
+      '⚙️ Kirchhoff\'s Circuit Laws (KVL/KCL)',
+    ];
+
+    if (domain === 'Physics') {
+      domainSuggestions = [
+        'Explain Newton\'s Second Law (F = ma)',
+        'Why do action-reaction pairs not cancel?',
+        'Calculate net force on a 2 kg accelerating object',
+      ];
+    } else if (domain === 'Chemistry') {
+      domainSuggestions = [
+        'When is a reaction spontaneous (ΔG < 0)?',
+        'Explain Le Chatelier\'s Principle with Haber process',
+        'How does temperature affect equilibrium constant K?',
+      ];
+    } else if (domain === 'Maths') {
+      domainSuggestions = [
+        'How to find Integrating Factor for dy/dx + P(x)y = Q(x)?',
+        'Derive product rule d/dx [u*v]',
+        'Explain eigenvalues and eigenvectors intuitively',
+      ];
+    } else if (domain === 'CS') {
+      domainSuggestions = [
+        'Why does Binary Search take O(log n)?',
+        'Compare BFS vs DFS with use cases',
+        'Explain Dynamic Programming memoization',
+      ];
+    } else if (domain === 'Engineering') {
+      domainSuggestions = [
+        'Explain Kirchhoff\'s Current Law (KCL)',
+        'Calculate two 6Ω resistors in parallel',
+        'How does an ideal capacitor behave in DC circuits?',
+      ];
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-domain-${Date.now()}`,
+        role: 'assistant',
+        content: `Switched focus to **${domain === 'All' ? 'All STEM Disciplines' : domain}**. Ask me any question or tap a prompt below!`,
+        timestamp: 'Just now',
+        suggestions: domainSuggestions,
+      },
+    ]);
+  };
 
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || inputMessage).trim();
@@ -95,7 +158,8 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
         {
           difficulty,
           language,
-          mode: 'socratic',
+          mode: teachingMode,
+          currentTopic: activeDomain === 'All' ? 'Physics, Chemistry, Maths & Engineering' : activeDomain,
           contextSnippet: sharedContext?.text,
         },
         isDemoMode
@@ -205,7 +269,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
           <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs">
             ⚡
           </div>
-          <span className="hidden sm:inline text-xs font-bold tracking-wide">Ask AI Tutor</span>
+          <span className="hidden sm:inline text-xs font-bold tracking-wide">Ask AI Tutor (All STEM)</span>
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </button>
       )}
@@ -215,8 +279,8 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
         <div
           className={`fixed z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl flex flex-col overflow-hidden transition-all duration-300 ${
             isExpanded
-              ? 'inset-4 sm:inset-10 sm:max-w-3xl sm:mx-auto'
-              : 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-[94vw] sm:w-[410px] h-[550px] max-h-[88vh]'
+              ? 'inset-4 sm:inset-10 sm:max-w-4xl sm:mx-auto'
+              : 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-[94vw] sm:w-[450px] h-[580px] max-h-[88vh]'
           }`}
         >
           {/* Header */}
@@ -227,13 +291,13 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
               </div>
               <div>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>Snap AI Tutor</span>
+                  <span>Snap AI STEM Tutor</span>
                   <span className="text-[10px] font-normal text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 rounded-full">
                     Online
                   </span>
                 </h3>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                  {difficulty} • {language}
+                  Physics • Chemistry • Maths • Engineering
                 </p>
               </div>
             </div>
@@ -241,7 +305,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                 title={isExpanded ? 'Restore window size' : 'Expand window'}
               >
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -251,18 +315,40 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
                   setMessages([messages[0]]);
                   onClearSharedContext?.();
                 }}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                 title="Clear conversation"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                 title="Close chat"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+
+          {/* Quick Subject Filter Selector */}
+          <div className="px-3 py-1.5 bg-slate-100/70 dark:bg-slate-800/50 border-b border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] gap-1 overflow-x-auto">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">Subject:</span>
+            <div className="flex items-center gap-1">
+              {(['All', 'Physics', 'Chemistry', 'Maths', 'CS', 'Engineering'] as const).map((dom) => (
+                <button
+                  key={dom}
+                  type="button"
+                  onClick={() => handleDomainFilter(dom)}
+                  className={`px-2 py-0.5 rounded-md font-semibold transition-all shrink-0 cursor-pointer text-[10px] ${
+                    activeDomain === dom
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {dom === 'Physics' ? '⚡ ' : dom === 'Chemistry' ? '🧪 ' : dom === 'Maths' ? '📐 ' : dom === 'CS' ? '💻 ' : dom === 'Engineering' ? '⚙️ ' : ''}
+                  {dom}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -277,7 +363,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
               </div>
               <button
                 onClick={onClearSharedContext}
-                className="text-[10px] text-indigo-600 dark:text-indigo-400 underline shrink-0 font-semibold"
+                className="text-[10px] text-indigo-600 dark:text-indigo-400 underline shrink-0 font-semibold cursor-pointer"
               >
                 Clear
               </button>
@@ -314,7 +400,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
                           <button
                             type="button"
                             onClick={() => speakText(m.content)}
-                            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                             title="Read out loud"
                           >
                             {isSpeaking ? (
@@ -334,7 +420,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
                           <button
                             key={idx}
                             onClick={() => handleSend(s)}
-                            className="text-[10px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 font-medium transition-colors text-left"
+                            className="text-[10px] px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 font-medium transition-colors text-left cursor-pointer"
                           >
                             {s}
                           </button>
@@ -351,7 +437,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" />
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
-                <span>Snap is thinking...</span>
+                <span>Snap is calculating response...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -362,36 +448,46 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
             <div className="flex items-center gap-1 overflow-x-auto py-0.5">
               <button
                 type="button"
-                onClick={() => handleSend('Explain this concept simply in 2 steps.')}
-                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0"
+                onClick={() => handleSend('Explain this step-by-step with formulas and units.')}
+                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer"
               >
-                💡 Explain Simply
+                💡 Step-by-Step
               </button>
               <button
                 type="button"
-                onClick={() => handleSend('Can you give a practical engineering example?')}
-                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0"
+                onClick={() => handleSend('Can you give a practical real-world engineering example?')}
+                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer"
               >
-                ⚙️ Give Example
+                ⚙️ Practical Example
               </button>
               <button
                 type="button"
-                onClick={() => handleSend('Quiz me with 1 quick practice question.')}
-                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0"
+                onClick={() => handleSend('Give me 1 quick practice problem to test my understanding.')}
+                className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 shrink-0 cursor-pointer"
               >
-                ❓ Quick Quiz
+                ❓ Practice Problem
               </button>
             </div>
 
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as ResponseLanguage)}
-              className="text-[10px] py-0.5 px-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300"
-            >
-              <option>English</option>
-              <option>Hindi</option>
-              <option>Hinglish</option>
-            </select>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setTeachingMode(teachingMode === 'socratic' ? 'direct' : 'socratic')}
+                className="text-[10px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded font-medium cursor-pointer"
+                title="Toggle Socratic vs Direct explanations"
+              >
+                {teachingMode === 'socratic' ? 'Socratic' : 'Direct'}
+              </button>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as ResponseLanguage)}
+                className="text-[10px] py-0.5 px-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300"
+              >
+                <option>English</option>
+                <option>Hindi</option>
+                <option>Hinglish</option>
+              </select>
+            </div>
           </div>
 
           {/* Input Footer */}
@@ -406,7 +502,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
               <button
                 type="button"
                 onClick={toggleSpeechRecognition}
-                className={`p-2 rounded-xl border transition-colors ${
+                className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                   isListening
                     ? 'bg-rose-50 border-rose-300 text-rose-600 animate-pulse'
                     : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
@@ -420,14 +516,14 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask Snap a study question..."
+                placeholder="Ask any Physics, Chemistry, Maths, or Engineering question..."
                 className="flex-1 text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-hidden dark:text-slate-200"
               />
 
               <button
                 type="submit"
                 disabled={isSending || !inputMessage.trim()}
-                className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs disabled:opacity-40"
+                className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs disabled:opacity-40 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
               </button>

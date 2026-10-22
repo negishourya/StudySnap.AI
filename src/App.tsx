@@ -142,6 +142,7 @@ export default function App() {
             <NotesTransformerWorkspace
               isDemoMode={isDemoMode}
               onOpenTutorWithTopic={handleOpenTutorWithTopic}
+              onShareContextWithTutor={(ctx) => setSharedTutorContext(ctx)}
             />
           </div>
         )}

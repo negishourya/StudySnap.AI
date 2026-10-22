@@ -14,7 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { Flashcard, LearningSubject } from '../../types';
-import { DEMO_FLASHCARDS } from '../../constants/demoData';
+import { STEM_PRESETS, DEMO_FLASHCARDS } from '../../constants/demoData';
 import { generateFlashcards } from '../../services/api';
 import { DemoBadge } from '../common/DemoBadge';
 
@@ -27,7 +27,12 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
   isDemoMode,
   onAskTutorAboutCard,
 }) => {
-  const [cards, setCards] = useState<Flashcard[]>(DEMO_FLASHCARDS);
+  const [selectedDomain, setSelectedDomain] = useState<string>('All');
+  
+  // All combined cards from all STEM presets
+  const allStemCards = STEM_PRESETS.flatMap((p) => p.flashcards);
+
+  const [cards, setCards] = useState<Flashcard[]>(allStemCards);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [customNotes, setCustomNotes] = useState('');
@@ -37,7 +42,24 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
   const [copied, setCopied] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
 
-  const currentCard = cards[currentIndex] || cards[0];
+  const handleDomainFilter = (domain: string) => {
+    setSelectedDomain(domain);
+    setIsFlipped(false);
+    setCurrentIndex(0);
+
+    if (domain === 'All') {
+      setCards(allStemCards);
+    } else {
+      const matched = STEM_PRESETS.find((p) => p.domain === domain);
+      if (matched && matched.flashcards.length > 0) {
+        setCards(matched.flashcards);
+      } else {
+        setCards(allStemCards);
+      }
+    }
+  };
+
+  const currentCard = cards[currentIndex] || cards[0] || DEMO_FLASHCARDS[0];
 
   const handleNext = () => {
     setIsFlipped(false);
@@ -71,6 +93,7 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
         setCurrentIndex(0);
         setIsFlipped(false);
         setShowGenerator(false);
+        setSelectedDomain('Custom');
       }
     } finally {
       setIsGenerating(false);
@@ -87,10 +110,10 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
   };
 
   const masteredCount = cards.filter((c) => c.mastered).length;
-  const progressPercent = Math.round((masteredCount / cards.length) * 100);
+  const progressPercent = cards.length > 0 ? Math.round((masteredCount / cards.length) * 100) : 0;
 
   return (
-    <div className="space-y-8 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
@@ -103,7 +126,7 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Active recall flashcards designed for rapid concept memorization, formula retention, and midterm revision.
+            Active recall flashcards across Physics, Chemistry, Mathematics, and Engineering.
           </p>
         </div>
 
@@ -111,18 +134,54 @@ export const FlashcardsWorkspace: React.FC<FlashcardsWorkspaceProps> = ({
           {isDemoMode && <DemoBadge />}
           <button
             onClick={() => setShowGenerator(!showGenerator)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>{showGenerator ? 'Close Generator' : 'Generate New Deck'}</span>
+            <span>{showGenerator ? 'Close Generator' : 'Generate Custom Deck'}</span>
           </button>
           <button
             onClick={handleCopyDeck}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors shadow-xs cursor-pointer"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? 'Copied' : 'Export Deck'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Domain Deck Switcher */}
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span>Deck Subject:</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[
+            { id: 'All', label: 'All STEM Decks', icon: '🌟' },
+            { id: 'Physics', label: 'Physics (Dynamics)', icon: '⚡' },
+            { id: 'Chemistry', label: 'Chemistry (Thermodynamics)', icon: '🧪' },
+            { id: 'Mathematics', label: 'Maths (Calculus & ODEs)', icon: '📐' },
+            { id: 'Computer Science', label: 'CS (Algorithms & Big-O)', icon: '💻' },
+            { id: 'Engineering', label: 'Engineering (Circuits)', icon: '⚙️' },
+          ].map((tab) => {
+            const isSelected = selectedDomain === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleDomainFilter(tab.id)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
