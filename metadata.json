@@ -1,0 +1,8 @@
+{
+  "name": "Remix StudySnap AI",
+  "description": "Turn Your Notes Into Your Next A+. Understand More. Memorize Less. Learn Smarter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
