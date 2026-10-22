@@ -36,6 +36,8 @@ interface LandingPageProps {
   onExploreDemo: () => void;
   onOpenPrivacyModal: () => void;
   onOpenDeleteDataModal: () => void;
+  authUser?: any;
+  onOpenAuthModal?: (mode: 'signin' | 'signup') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -43,6 +45,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onExploreDemo,
   onOpenPrivacyModal,
   onOpenDeleteDataModal,
+  authUser,
+  onOpenAuthModal,
 }) => {
   // Showcase Tab in Section 3 & 5
   const [showcaseTab, setShowcaseTab] = useState<'explanation' | 'summary' | 'quiz' | 'flashcard'>('explanation');
@@ -106,19 +110,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
               <button
                 onClick={() => onNavigate('transformer')}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Start Studying Free</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <button
-                onClick={onExploreDemo}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Explore STEM Demos</span>
-              </button>
+              {!authUser ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal?.('signup')}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <span>Create Free Account</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onExploreDemo}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Explore STEM Demos</span>
+                </button>
+              )}
             </div>
 
             <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center justify-center lg:justify-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">

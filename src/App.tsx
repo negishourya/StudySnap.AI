@@ -10,11 +10,18 @@ import { ResumeAnalyzerWorkspace } from './components/workspaces/ResumeAnalyzerW
 import { GlobalFloatingTutor } from './components/common/GlobalFloatingTutor';
 import { PrivacyModal } from './components/common/PrivacyModal';
 import { DeleteDataModal } from './components/common/DeleteDataModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { supabase } from './lib/supabase';
 import { fetchUserProfile, checkServerHealth } from './services/api';
 import { UserProfile, TutorContextShare } from './types';
 
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('landing');
+
+  // Supabase Auth State
+  const [authUser, setAuthUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin');
 
   // Real Mode vs Demo Mode state (default to Demo Mode so initial exploration works immediately without API key)
   const [isDemoMode, setIsDemoMode] = useState(true);
@@ -60,6 +67,59 @@ export default function App() {
     dailyGoal: 3,
     dailyProgress: 2,
   });
+
+  // Supabase Auth State Listener
+  useEffect(() => {
+    // 1. Get initial active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setAuthUser(session.user);
+        setUserProfile((prev) => ({
+          ...prev,
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Student Learner',
+          email: session.user.email || 'guest@studysnap.ai',
+        }));
+      }
+    });
+
+    // 2. Listen to ongoing auth events (login, signup, logout)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setAuthUser(session.user);
+        setUserProfile((prev) => ({
+          ...prev,
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Student Learner',
+          email: session.user.email || 'guest@studysnap.ai',
+        }));
+      } else {
+        setAuthUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setAuthUser(null);
+    setUserProfile((prev) => ({
+      ...prev,
+      id: 'guest',
+      name: 'Student Learner',
+      email: 'guest@studysnap.ai',
+    }));
+  };
+
+  const handleOpenAuth = (mode: 'signin' | 'signup') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
 
   useEffect(() => {
     // Initial health check to see if Gemini API key is configured
@@ -117,6 +177,9 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenDeleteDataModal={() => setIsDeleteDataModalOpen(true)}
+        authUser={authUser}
+        onOpenAuthModal={handleOpenAuth}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Workspace View Router */}
@@ -134,6 +197,8 @@ export default function App() {
             }}
             onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
             onOpenDeleteDataModal={() => setIsDeleteDataModalOpen(true)}
+            authUser={authUser}
+            onOpenAuthModal={handleOpenAuth}
           />
         )}
 
@@ -212,6 +277,16 @@ export default function App() {
         isOpen={isDeleteDataModalOpen}
         onClose={() => setIsDeleteDataModalOpen(false)}
         onDeleted={handleDataDeleted}
+      />
+
+      {/* Supabase Authentication Modal (Sign In / Register / Password Reset) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onAuthSuccess={(user) => {
+          setAuthUser(user);
+        }}
       />
     </div>
   );

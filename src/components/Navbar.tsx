@@ -15,6 +15,9 @@ import {
   Trophy,
   ChevronDown,
   GraduationCap,
+  LogIn,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { DemoBadge } from './common/DemoBadge';
 
@@ -37,6 +40,9 @@ interface NavbarProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenDeleteDataModal: () => void;
+  authUser?: { id: string; email?: string; user_metadata?: { full_name?: string } } | null;
+  onOpenAuthModal?: (mode: 'signin' | 'signup') => void;
+  onSignOut?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -49,6 +55,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   theme,
   onToggleTheme,
   onOpenDeleteDataModal,
+  authUser,
+  onOpenAuthModal,
+  onSignOut,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -227,18 +236,61 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
+            {/* Supabase Auth State / Buttons */}
+            {authUser ? (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 py-1 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 max-w-[150px]">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {(authUser.user_metadata?.full_name || authUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                  <span
+                    className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate"
+                    title={authUser.email}
+                  >
+                    {authUser.user_metadata?.full_name || authUser.email?.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  title="Sign out of Supabase"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal?.('signin')}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal?.('signup')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
+
             {/* Quick launch primary CTA */}
             {activeView === 'landing' ? (
               <button
                 onClick={() => setActiveView('transformer')}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer"
               >
                 Start Studying
               </button>
             ) : (
               <button
                 onClick={() => setActiveView('landing')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
               >
                 Back to Home
               </button>
@@ -319,6 +371,58 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               AI Resume Analyzer
             </button>
+          </div>
+
+          {/* Supabase Auth on Mobile */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            {authUser ? (
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/70 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {(authUser.user_metadata?.full_name || authUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {authUser.user_metadata?.full_name || 'Signed In'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate max-w-[170px]">
+                      {authUser.email}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    onSignOut?.();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="px-2.5 py-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg flex items-center gap-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    onOpenAuthModal?.('signin');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 text-center"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    onOpenAuthModal?.('signup');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-center shadow-xs"
+                >
+                  Register (Supabase)
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
