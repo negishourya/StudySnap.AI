@@ -334,7 +334,7 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
           <span>Explore STEM Topics:</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none sm:flex-wrap">
           {STEM_PRESETS.map((preset) => {
             const isSelected = selectedPresetId === preset.id;
             return (
@@ -342,7 +342,7 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
                 key={preset.id}
                 type="button"
                 onClick={() => handleSelectPreset(preset)}
-                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all border flex items-center gap-1.5 cursor-pointer shrink-0 ${
                   isSelected
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-500/20'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'

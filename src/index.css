@@ -29,6 +29,10 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   html.dark {
@@ -40,6 +44,17 @@
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     transition: background-color 0.25s ease, color 0.25s ease;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ensure buttons and inputs react instantly on touch devices */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
   }
 
   body.dark {

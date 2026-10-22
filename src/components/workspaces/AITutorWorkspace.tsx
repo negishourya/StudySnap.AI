@@ -389,7 +389,7 @@ What would you like to master first? We can walk through the governing formulas,
       {/* Main Grid: Left Mascot & Learning Path / Right Chat Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: 3D Mascot & Duolingo Learning Journey (4 cols) */}
-        <div className="lg:col-span-4 space-y-5">
+        <div className="order-2 lg:order-1 lg:col-span-4 space-y-5">
           {/* Animated 3D Mascot Card */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs text-center flex flex-col items-center relative overflow-hidden">
             <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -509,7 +509,7 @@ What would you like to master first? We can walk through the governing formulas,
         </div>
 
         {/* Right Column: Interactive Tutor Conversation & Challenge (8 cols) */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[670px] overflow-hidden">
+        <div className="order-1 lg:order-2 lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[540px] sm:h-[670px] overflow-hidden">
           {/* Tutor Controls Header */}
           <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">

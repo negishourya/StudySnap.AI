@@ -14,7 +14,6 @@ import {
   BookOpen,
   Share2,
 } from 'lucide-react';
-import { Mascot3D } from '../3d/Mascot3D';
 import { TutorMessage, DifficultyLevel, ResponseLanguage, TutorContextShare } from '../../types';
 import { chatWithTutor } from '../../services/api';
 
@@ -263,7 +262,7 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 p-3.5 sm:px-4 sm:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 group cursor-pointer border border-indigo-400/30"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-3 sm:px-4 sm:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer border border-indigo-400/30"
           title="Open AI Tutor"
         >
           <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs">
@@ -279,8 +278,8 @@ export const GlobalFloatingTutor: React.FC<GlobalFloatingTutorProps> = ({
         <div
           className={`fixed z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl flex flex-col overflow-hidden transition-all duration-300 ${
             isExpanded
-              ? 'inset-4 sm:inset-10 sm:max-w-4xl sm:mx-auto'
-              : 'bottom-4 right-4 sm:bottom-6 sm:right-6 w-[94vw] sm:w-[450px] h-[580px] max-h-[88vh]'
+              ? 'inset-2 sm:inset-10 sm:max-w-4xl sm:mx-auto'
+              : 'inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[450px] h-[80vh] sm:h-[580px] max-h-[88vh]'
           }`}
         >
           {/* Header */}

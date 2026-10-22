@@ -1,15 +1,28 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 export const HeroScene3D: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if device is mobile or tablet with narrow screen
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      return mobile;
+    };
+
+    if (checkMobile()) {
+      return; // Skip WebGL on mobile for buttery smooth 120fps touch experience
+    }
+
     const container = mountRef.current;
     if (!container) return;
 
     const width = container.clientWidth;
     const height = container.clientHeight;
+    if (width === 0 || height === 0) return;
 
     const isSoftwareGl = (() => {
       const gl = document.createElement('canvas').getContext('webgl2');
@@ -33,7 +46,7 @@ export const HeroScene3D: React.FC = () => {
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
@@ -98,37 +111,39 @@ export const HeroScene3D: React.FC = () => {
     const ringMat2 = new THREE.MeshStandardMaterial({
       color: 0x38bdf8,
       emissive: 0x0284c7,
-      emissiveIntensity: 0.6,
+      emissiveIntensity: 0.8,
     });
     const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
-    ring2.position.set(2.6, -1.8, -1.8);
+    ring2.position.set(-2.8, 1.8, -2);
     ring2.rotation.y = Math.PI / 4;
     group.add(ring2);
 
-    // 4. Engineering Prism
-    const prismGeo = new THREE.ConeGeometry(0.8, 1.4, 5);
+    // 4. Optical Prism (Light dispersion)
+    const prismGeo = new THREE.ConeGeometry(0.8, 1.4, 3);
     const prismMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b,
-      roughness: 0.3,
-      metalness: 0.4,
+      color: 0xec4899,
+      roughness: 0.1,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.85,
     });
     const prism = new THREE.Mesh(prismGeo, prismMat);
-    prism.position.set(0.2, -2.2, -2.5);
+    prism.position.set(2.6, -1.8, -1.5);
     group.add(prism);
 
-    // Particle field / floating knowledge sparks
-    const particleCount = 40;
+    // 5. Starfield Dust of Knowledge Particles
+    const particleCount = 60;
     const particleGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 14;
-      positions[i + 1] = (Math.random() - 0.5) * 10;
-      positions[i + 2] = (Math.random() - 0.5) * 6;
+      positions[i] = (Math.random() - 0.5) * 16;
+      positions[i + 1] = (Math.random() - 0.5) * 12;
+      positions[i + 2] = (Math.random() - 0.5) * 8;
     }
     particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0x6366f1,
-      size: 0.08,
+      size: 0.06,
       transparent: true,
       opacity: 0.6,
     });
@@ -139,6 +154,7 @@ export const HeroScene3D: React.FC = () => {
     let mouseX = 0;
     let mouseY = 0;
     let scrollY = 0;
+    let isVisible = true;
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = (e.clientX / window.innerWidth) * 2 - 1;
@@ -149,38 +165,51 @@ export const HeroScene3D: React.FC = () => {
       scrollY = window.scrollY;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // IntersectionObserver to pause rendering when offscreen
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          isVisible = entry.isIntersecting;
+        });
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
 
     let animId = 0;
     let clock = new THREE.Clock();
 
     const animate = () => {
-      const elapsed = clock.getElapsedTime();
+      if (isVisible) {
+        const elapsed = clock.getElapsedTime();
 
-      // Slow elegant rotations
-      octahedron.rotation.x = elapsed * 0.3;
-      octahedron.rotation.y = elapsed * 0.4;
-      octahedron.position.y = 1.2 + Math.sin(elapsed * 1.5) * 0.15;
+        // Slow elegant rotations
+        octahedron.rotation.x = elapsed * 0.3;
+        octahedron.rotation.y = elapsed * 0.4;
+        octahedron.position.y = 1.2 + Math.sin(elapsed * 1.5) * 0.15;
 
-      torusKnot.rotation.x = elapsed * 0.25;
-      torusKnot.rotation.y = elapsed * 0.35;
-      torusKnot.position.y = -0.8 + Math.cos(elapsed * 1.8) * 0.12;
+        torusKnot.rotation.x = elapsed * 0.25;
+        torusKnot.rotation.y = elapsed * 0.35;
+        torusKnot.position.y = -0.8 + Math.cos(elapsed * 1.8) * 0.12;
 
-      ring1.rotation.z = elapsed * 0.4;
-      ring1.rotation.x = Math.PI / 3 + Math.sin(elapsed * 0.8) * 0.1;
+        ring1.rotation.z = elapsed * 0.4;
+        ring1.rotation.x = Math.PI / 3 + Math.sin(elapsed * 0.8) * 0.1;
 
-      ring2.rotation.z = -elapsed * 0.3;
-      ring2.rotation.y = Math.PI / 4 + Math.cos(elapsed * 0.7) * 0.1;
+        ring2.rotation.z = -elapsed * 0.3;
+        ring2.rotation.y = Math.PI / 4 + Math.cos(elapsed * 0.7) * 0.1;
 
-      prism.rotation.y = elapsed * 0.5;
+        prism.rotation.y = elapsed * 0.5;
 
-      // Parallax damping
-      camera.position.x += (mouseX * 0.8 - camera.position.x) * 0.05;
-      camera.position.y += (mouseY * 0.6 - (scrollY * 0.002) - camera.position.y) * 0.05;
-      camera.lookAt(0, -scrollY * 0.001, 0);
+        // Parallax damping
+        camera.position.x += (mouseX * 0.8 - camera.position.x) * 0.05;
+        camera.position.y += (mouseY * 0.6 - scrollY * 0.002 - camera.position.y) * 0.05;
+        camera.lookAt(0, -scrollY * 0.001, 0);
 
-      renderer.render(scene, camera);
+        renderer.render(scene, camera);
+      }
       animId = requestAnimationFrame(animate);
     };
 
@@ -188,6 +217,10 @@ export const HeroScene3D: React.FC = () => {
 
     const handleResize = () => {
       if (!container) return;
+      if (window.innerWidth < 768) {
+        setIsMobile(true);
+        return;
+      }
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w > 0 && h > 0) {
@@ -196,9 +229,10 @@ export const HeroScene3D: React.FC = () => {
         renderer.setSize(w, h);
       }
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
+      observer.disconnect();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
@@ -223,6 +257,19 @@ export const HeroScene3D: React.FC = () => {
       particleMat.dispose();
     };
   }, []);
+
+  if (isMobile) {
+    // Ultra-lightweight ambient gradient background for mobile phones: 0% GPU load, instant response
+    return (
+      <div
+        className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute top-10 -left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 -right-10 w-72 h-72 bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div

@@ -41,13 +41,15 @@ export const Mascot3D: React.FC<Mascot3DProps> = ({
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 50);
     camera.position.set(0, 0.2, 3.2);
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: !isSoftwareGl,
-      powerPreference: 'high-performance',
+      antialias: !isSoftwareGl && !isMobile,
+      powerPreference: 'default',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile || isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
@@ -231,9 +233,22 @@ export const Mascot3D: React.FC<Mascot3DProps> = ({
       // Beacon breathing glow
       beaconMat.emissiveIntensity = 1.5 + Math.sin(elapsed * 3.5) * 1.2;
 
-      renderer.render(scene, camera);
+      if (isVisible) {
+        renderer.render(scene, camera);
+      }
       animId = requestAnimationFrame(animate);
     };
+
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          isVisible = entry.isIntersecting;
+        });
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
 
     animId = requestAnimationFrame(animate);
 
@@ -248,9 +263,10 @@ export const Mascot3D: React.FC<Mascot3DProps> = ({
         renderer.setSize(w, h);
       }
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
+      observer.disconnect();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animId);
