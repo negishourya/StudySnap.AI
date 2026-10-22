@@ -18,6 +18,7 @@ import {
   LogIn,
   LogOut,
   User,
+  Shield,
 } from 'lucide-react';
 import { DemoBadge } from './common/DemoBadge';
 
@@ -28,7 +29,8 @@ export type AppView =
   | 'tutor'
   | 'dashboard'
   | 'resume-builder'
-  | 'resume-analyzer';
+  | 'resume-analyzer'
+  | 'admin';
 
 interface NavbarProps {
   activeView: AppView;
@@ -183,6 +185,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Admin Panel Navigation Link */}
+            <button
+              onClick={() => {
+                setActiveView('admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeView === 'admin'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:bg-amber-50/80 dark:hover:bg-amber-950/40'
+              }`}
+              title="Admin Panel: Add & Remove Notes (Password: 1234)"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Admin</span>
+            </button>
           </nav>
 
           {/* Right Action Hub: Mode Toggle, Theme Toggle & Stats */}
@@ -370,6 +389,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               AI Resume Analyzer
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveView('admin');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                activeView === 'admin'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Admin Panel (PIN: 1234)</span>
             </button>
           </div>
 

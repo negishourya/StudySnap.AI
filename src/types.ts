@@ -202,3 +202,19 @@ export interface ResumeAnalysisResult {
   }>;
   actionPlan: string[];
 }
+
+export interface StudyNote {
+  id: string;
+  user_id?: string | null;
+  author_name?: string;
+  subject: LearningSubject | string;
+  topic: string;
+  content: string;
+  image_url?: string | null;
+  image_name?: string | null;
+  tags?: string[];
+  is_admin_curated?: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+

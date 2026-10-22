@@ -26,22 +26,28 @@ import {
   SummaryLength,
   QuizQuestion,
   TutorContextShare,
+  StudyNote,
 } from '../../types';
 import { explainNotes, summarizeNotes, generateQuiz } from '../../services/api';
 import { STEM_PRESETS, StemTopicPreset, DEMO_RAW_NOTES } from '../../constants/demoData';
 import { DemoBadge } from '../common/DemoBadge';
 import { FileUploadModal } from '../common/FileUploadModal';
+import { DraggableNoteImage } from '../common/DraggableNoteImage';
+import { fetchAllNotes, createStudyNote, deleteStudyNote } from '../../services/notesService';
+import { Bookmark, Image as ImageIcon, Plus, Trash2, X, Move } from 'lucide-react';
 
 interface NotesTransformerWorkspaceProps {
   isDemoMode: boolean;
   onOpenTutorWithTopic?: (topic: string) => void;
   onShareContextWithTutor?: (ctx: TutorContextShare) => void;
+  authUser?: any;
 }
 
 export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps> = ({
   isDemoMode,
   onOpenTutorWithTopic,
   onShareContextWithTutor,
+  authUser,
 }) => {
   // Input State
   const [selectedPresetId, setSelectedPresetId] = useState<string>('physics-mechanics');
@@ -72,11 +78,92 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [isQuizSubmitted, setIsQuizSubmitted] = useState(false);
 
+  // User Notes & Draggable Image State
+  const [noteTopic, setNoteTopic] = useState('Classical Mechanics & Newton’s Laws');
+  const [noteImageUrl, setNoteImageUrl] = useState<string | null>(
+    'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=800&q=80'
+  );
+  const [noteImageName, setNoteImageName] = useState('newtons_law_diagram.jpg');
+  const [isDraggingImageIn, setIsDraggingImageIn] = useState(false);
+  const [isNotesLibraryOpen, setIsNotesLibraryOpen] = useState(false);
+  const [savedNotes, setSavedNotes] = useState<StudyNote[]>([]);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [noteSaveToast, setNoteSaveToast] = useState<string | null>(null);
+
+  // Load saved notes from Supabase / local storage on mount
+  React.useEffect(() => {
+    fetchAllNotes().then((res) => {
+      setSavedNotes(res.notes);
+    });
+  }, []);
+
+  const handleDropNoteImage = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingImageIn(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setNoteImageName(file.name);
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            setNoteImageUrl(reader.result);
+            setNoteSaveToast(`Attached diagram: ${file.name}`);
+            setTimeout(() => setNoteSaveToast(null), 3000);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleSaveCurrentNote = async () => {
+    if (!notes.trim()) {
+      setErrorMessage('Cannot save empty notes.');
+      return;
+    }
+    setIsSavingNote(true);
+    try {
+      const res = await createStudyNote({
+        topic: noteTopic.trim() || `${subject} Note`,
+        subject,
+        content: notes.trim(),
+        author_name: authUser?.user_metadata?.full_name || authUser?.email || 'Student Learner',
+        user_id: authUser?.id || null,
+        image_url: noteImageUrl,
+        image_name: noteImageName,
+        tags: [subject],
+        is_admin_curated: false,
+      });
+
+      setSavedNotes((prev) => [res.note, ...prev.filter((n) => n.id !== res.note.id)]);
+      setNoteSaveToast('Note & diagram saved to your library!');
+      setTimeout(() => setNoteSaveToast(null), 3500);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to save note');
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleLoadNoteIntoWorkspace = (noteItem: StudyNote) => {
+    setNotes(noteItem.content);
+    setSubject(noteItem.subject as LearningSubject);
+    setNoteTopic(noteItem.topic);
+    setNoteImageUrl(noteItem.image_url || null);
+    setNoteImageName(noteItem.image_name || 'diagram.png');
+    setIsNotesLibraryOpen(false);
+    setNoteSaveToast(`Loaded "${noteItem.topic}" into Transformer!`);
+    setTimeout(() => setNoteSaveToast(null), 3000);
+  };
+
   const handleSelectPreset = (preset: StemTopicPreset) => {
     setSelectedPresetId(preset.id);
     setNotes(preset.rawNotes);
     setSubject(preset.subject);
     setDifficulty(preset.difficulty);
+    setNoteTopic(preset.title);
     setErrorMessage(null);
 
     // Auto-update outputs for immediate exploration
@@ -271,28 +358,55 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
         </div>
       </div>
 
+      {/* Toast Notification */}
+      {noteSaveToast && (
+        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl shadow-2xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-semibold flex items-center gap-2.5 animate-in slide-in-from-top-4">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{noteSaveToast}</span>
+        </div>
+      )}
+
       {/* Main Grid: Left Controls & Notes / Right Outputs */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Input Form (5 cols) */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Source Study Material
+              Note Topic &amp; Title
             </label>
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Upload Document</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsNotesLibraryOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 px-2 py-1 rounded-lg cursor-pointer transition-colors"
+                title="Browse saved and curated notes"
+              >
+                <Bookmark className="w-3.5 h-3.5 text-indigo-500" />
+                <span>My Notes ({savedNotes.length})</span>
+              </button>
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 px-2 py-1 rounded-lg cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload</span>
+              </button>
+            </div>
           </div>
+
+          <input
+            type="text"
+            value={noteTopic}
+            onChange={(e) => setNoteTopic(e.target.value)}
+            placeholder="e.g. Classical Mechanics: Newton's Laws & Friction"
+            className="w-full text-xs sm:text-sm px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-hidden font-semibold text-slate-900 dark:text-white"
+          />
 
           <div className="relative">
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={9}
+              rows={8}
               placeholder="Paste lecture notes, textbook definitions, formula derivations, chemical equations, or code snippets here..."
               className="w-full text-xs sm:text-sm p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-hidden transition-all resize-y font-mono dark:text-slate-200"
             />
@@ -300,6 +414,86 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
               <span>{notes.length.toLocaleString()} characters</span>
               <span>Max 20,000 characters</span>
             </div>
+          </div>
+
+          {/* Attached Draggable Diagram Section */}
+          <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Attached Diagram (Drag in &amp; Drag out)</span>
+              </span>
+              {noteImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNoteImageUrl(null);
+                    setNoteImageName('diagram.png');
+                  }}
+                  className="text-[10px] text-rose-500 hover:underline cursor-pointer"
+                >
+                  Remove diagram
+                </button>
+              )}
+            </div>
+
+            {noteImageUrl ? (
+              <div className="space-y-1.5">
+                <div className="h-44 w-full">
+                  <DraggableNoteImage
+                    imageUrl={noteImageUrl}
+                    imageName={noteImageName}
+                    altText={noteTopic}
+                    className="h-full w-full"
+                  />
+                </div>
+                <p className="text-[10px] text-center text-slate-500">
+                  Tip: You can drag this diagram directly out onto your desktop or file explorer.
+                </p>
+              </div>
+            ) : (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDraggingImageIn(true);
+                }}
+                onDragLeave={() => setIsDraggingImageIn(false)}
+                onDrop={handleDropNoteImage}
+                className={`border-2 border-dashed rounded-xl p-3 text-center transition-all ${
+                  isDraggingImageIn
+                    ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30'
+                }`}
+              >
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Drag &amp; drop a diagram image here
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  or{' '}
+                  <label className="text-indigo-600 dark:text-indigo-400 font-bold underline cursor-pointer">
+                    browse from computer
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNoteImageName(file.name);
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === 'string') {
+                              setNoteImageUrl(reader.result);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Form Controls */}
@@ -406,23 +600,45 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
           </div>
 
           {/* Main Action CTA */}
-          <button
-            onClick={handleTransform}
-            disabled={isLoading || !notes.trim()}
-            className="w-full py-3 px-4 rounded-xl font-semibold text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-indigo-500/20 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-2"
-          >
-            {isLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Transforming with AI...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Transform My Notes</span>
-              </>
-            )}
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <button
+              onClick={handleTransform}
+              disabled={isLoading || !notes.trim()}
+              className="w-full py-3 px-3 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {isLoading ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>AI Transforming...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Transform Notes</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveCurrentNote}
+              disabled={isSavingNote || !notes.trim()}
+              className="w-full py-3 px-3 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Save this note with diagram to Supabase and your library"
+            >
+              {isSavingNote ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Bookmark className="w-4 h-4 text-indigo-500" />
+                  <span>Save to Notes</span>
+                </>
+              )}
+            </button>
+          </div>
 
           {errorMessage && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-xl text-xs flex items-start gap-2">
@@ -781,6 +997,118 @@ export const NotesTransformerWorkspace: React.FC<NotesTransformerWorkspaceProps>
         title="Upload Study Material"
         description="Extract notes from TXT, text-based PDF, or DOCX documents."
       />
+
+      {/* User Notes & Curated Library Modal */}
+      {isNotesLibraryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                  <Bookmark className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Study Notes Library
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Saved user notes and curated curriculum ({savedNotes.length} notes)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNotesLibraryOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4">
+              {savedNotes.length === 0 ? (
+                <div className="py-12 text-center text-slate-400">
+                  <BookOpen className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700 mb-2" />
+                  <p className="text-sm font-semibold">No saved notes yet</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Save notes from the input panel or browse curated STEM presets.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {savedNotes.map((noteItem) => (
+                    <div
+                      key={noteItem.id}
+                      className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col justify-between space-y-3"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            {noteItem.subject}
+                          </span>
+                          {noteItem.is_admin_curated && (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> Curated
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {noteItem.topic}
+                        </h4>
+
+                        {/* Draggable Image preview */}
+                        {noteItem.image_url && (
+                          <div className="h-36 w-full">
+                            <DraggableNoteImage
+                              imageUrl={noteItem.image_url}
+                              imageName={noteItem.image_name || `${noteItem.topic}.png`}
+                              altText={noteItem.topic}
+                              className="h-full w-full"
+                            />
+                          </div>
+                        )}
+
+                        <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3 font-mono leading-relaxed">
+                          {noteItem.content.replace(/###/g, '')}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 truncate max-w-[140px]">
+                          By {noteItem.author_name || 'Student'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteStudyNote(noteItem.id);
+                              setSavedNotes((prev) => prev.filter((n) => n.id !== noteItem.id));
+                              setNoteSaveToast('Note deleted.');
+                              setTimeout(() => setNoteSaveToast(null), 2000);
+                            }}
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 cursor-pointer"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleLoadNoteIntoWorkspace(noteItem)}
+                            className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-xs"
+                          >
+                            Load Note
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

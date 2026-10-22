@@ -923,6 +923,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 Privacy & Disclosures
               </button>
               <button
+                onClick={() => onNavigate('admin')}
+                className="hover:text-amber-400 text-amber-500 transition-colors font-medium flex items-center gap-1"
+                title="Super Admin Portal (Password: 1234)"
+              >
+                <span>Admin Portal</span>
+              </button>
+              <button
                 onClick={onOpenDeleteDataModal}
                 className="hover:text-rose-400 text-rose-500 transition-colors font-medium"
               >

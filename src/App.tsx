@@ -11,12 +11,41 @@ import { GlobalFloatingTutor } from './components/common/GlobalFloatingTutor';
 import { PrivacyModal } from './components/common/PrivacyModal';
 import { DeleteDataModal } from './components/common/DeleteDataModal';
 import { AuthModal } from './components/auth/AuthModal';
+import { AdminPanel } from './components/admin/AdminPanel';
+import { AdminPasswordGate } from './components/admin/AdminPasswordGate';
 import { supabase } from './lib/supabase';
 import { fetchUserProfile, checkServerHealth } from './services/api';
 import { UserProfile, TutorContextShare } from './types';
 
 export default function App() {
-  const [activeView, setActiveView] = useState<AppView>('landing');
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/admin' || window.location.hash === '#/admin') {
+        return 'admin';
+      }
+    }
+    return 'landing';
+  });
+
+  // Admin Authentication State (PIN: 1234)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('studysnap_admin_authenticated') === 'true';
+  });
+
+  // Listen to browser URL changes for /admin
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (window.location.pathname === '/admin' || window.location.hash === '#/admin') {
+        setActiveView('admin');
+      }
+    };
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
+  }, []);
 
   // Supabase Auth State
   const [authUser, setAuthUser] = useState<any>(null);
@@ -208,6 +237,7 @@ export default function App() {
               isDemoMode={isDemoMode}
               onOpenTutorWithTopic={handleOpenTutorWithTopic}
               onShareContextWithTutor={(ctx) => setSharedTutorContext(ctx)}
+              authUser={authUser}
             />
           </div>
         )}
@@ -254,6 +284,29 @@ export default function App() {
               isDemoMode={isDemoMode}
               onOpenBuilderWithData={() => setActiveView('resume-builder')}
             />
+          </div>
+        )}
+
+        {activeView === 'admin' && (
+          <div className="animate-in fade-in duration-300">
+            {!isAdminAuthenticated ? (
+              <AdminPasswordGate
+                onUnlock={() => setIsAdminAuthenticated(true)}
+                onCancel={() => {
+                  setActiveView('landing');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            ) : (
+              <AdminPanel
+                authUser={authUser}
+                onExitAdmin={() => {
+                  setIsAdminAuthenticated(false);
+                  setActiveView('landing');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            )}
           </div>
         )}
       </main>
